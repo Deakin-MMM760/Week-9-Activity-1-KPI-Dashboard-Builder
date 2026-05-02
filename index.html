@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMM760 | KPI Dashboard Builder (Week 9)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Calibri, "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f6f8;
+    color: #22313a;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 48px 20px;
+  }
+  header {
+    background: #00635e;
+    color: #ffffff;
+    padding: 24px 28px;
+    border-radius: 14px 14px 0 0;
+  }
+  header h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  header .subtitle {
+    margin: 0;
+    opacity: 0.92;
+    font-size: 0.95rem;
+  }
+  .intro-card {
+    background: #ffffff;
+    padding: 20px 24px;
+    border-left: 4px solid #F76919;
+  }
+  .intro-card p { margin: 0 0 10px 0; font-size: 0.95rem; }
+  .intro-card p:last-child { margin-bottom: 0; }
+  .intro-card strong { color: #00635e; }
+
+  .section {
+    background: #ffffff;
+    padding: 22px 24px;
+    border-bottom: 1px solid #e1e1e1;
+  }
+  .section h2 {
+    margin: 0 0 6px 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #00635e;
+  }
+  .section .section-intro {
+    margin: 0 0 16px 0;
+    font-size: 0.9rem;
+    color: #5f6f78;
+  }
+
+  .field-label {
+    display: block;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    font-size: 0.9rem;
+    color: #344047;
+  }
+  .field-note {
+    margin: 4px 0 8px 0;
+    font-size: 0.82rem;
+    color: #5f6f78;
+    font-style: italic;
+  }
+  input[type="text"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #c9d7dc;
+    border-radius: 8px;
+    font-family: Calibri, "Segoe UI", system-ui, sans-serif;
+    font-size: 0.95rem;
+    background: #ffffff;
+    color: #22313a;
+  }
+  input[type="text"]:focus, select:focus, textarea:focus {
+    outline: 2px solid #00635e;
+    outline-offset: 1px;
+    border-color: #00635e;
+  }
+  textarea {
+    min-height: 70px;
+    resize: vertical;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 880px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  @media (max-width: 720px) {
+    .metric-grid { grid-template-columns: 1fr; }
+  }
+  .metric-card {
+    border: 1.5px solid #c9d7dc;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .metric-card:hover {
+    border-color: #00635e;
+    background: #f0f8f7;
+  }
+  .metric-card.selected {
+    border-color: #00635e;
+    background: #e0f0ee;
+    border-width: 2px;
+  }
+  .metric-card.selected .metric-card__title::before {
+    content: "\2713  ";
+    color: #00635e;
+    font-weight: 700;
+  }
+  .metric-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .metric-card__title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #22313a;
+    margin: 0 0 4px 0;
+  }
+  .metric-card__desc {
+    font-size: 0.82rem;
+    color: #5f6f78;
+    margin: 0;
+  }
+  .metric-card__category {
+    display: inline-block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    margin-top: 6px;
+    font-weight: 700;
+  }
+  .metric-card__category--leading {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+  .metric-card__category--vanity {
+    background: #fdecea;
+    color: #b71c1c;
+  }
+  .metric-card__category--contextual {
+    background: #fff3e0;
+    color: #7a3800;
+  }
+
+  .dashboard-panel {
+    background: #f9fbfc;
+    border: 2px dashed #c9d7dc;
+    border-radius: 12px;
+    padding: 18px 20px;
+    min-height: 320px;
+  }
+  .dashboard-panel.has-metrics {
+    border-style: solid;
+    background: #ffffff;
+  }
+  .dashboard-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: #00635e;
+  }
+  .dashboard-empty {
+    color: #8a98a0;
+    font-style: italic;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .dashboard-counter {
+    display: inline-block;
+    background: #00635e;
+    color: #ffffff;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+  .dashboard-counter.warn {
+    background: #F76919;
+  }
+  .dashboard-counter.full {
+    background: #1b5e20;
+  }
+
+  .selected-metric {
+    background: #ffffff;
+    border: 1px solid #e1e1e1;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .selected-metric__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .selected-metric__title {
+    font-weight: 700;
+    color: #22313a;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #b71c1c;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    font-family: inherit;
+    text-decoration: underline;
+  }
+  .selected-metric__rationale {
+    margin-top: 8px;
+  }
+  .selected-metric__rationale label {
+    display: block;
+    font-size: 0.82rem;
+    color: #5f6f78;
+    margin-bottom: 4px;
+  }
+  .selected-metric__rationale textarea {
+    min-height: 50px;
+    font-size: 0.88rem;
+  }
+
+  .feedback-box {
+    background: #f4f6f8;
+    border-left: 3px solid #00635e;
+    padding: 10px 14px;
+    margin-top: 8px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.85rem;
+    color: #344047;
+  }
+  .feedback-box.warn {
+    border-left-color: #F76919;
+    background: #fff7ec;
+  }
+  .feedback-box.alert {
+    border-left-color: #b71c1c;
+    background: #fdecea;
+  }
+  .feedback-box.confirm {
+    border-left-color: #1b5e20;
+    background: #f0f8f0;
+  }
+  .feedback-box strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 24px 0 8px 0;
+    justify-content: center;
+  }
+  .btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: #00635e;
+    color: #ffffff;
+  }
+  .btn-primary:hover { background: #004d49; }
+  .btn-primary:disabled {
+    background: #c9d7dc;
+    color: #ffffff;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: #ffffff;
+    color: #00635e;
+    border: 2px solid #00635e;
+  }
+  .btn-secondary:hover { background: #f0f8f7; }
+  .btn-tertiary {
+    background: #ffffff;
+    color: #5f6f78;
+    border: 2px solid #c9d7dc;
+  }
+  .btn-tertiary:hover { background: #f4f6f8; }
+
+  .reminder-box {
+    background: #fff3e0;
+    border-left: 4px solid #F76919;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 18px 0;
+    font-size: 0.88rem;
+  }
+  .reminder-box strong { color: #7a3800; }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.82rem;
+    color: #5f6f78;
+  }
+  .attribution {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.78rem;
+    color: #8a98a0;
+  }
+  .save-status {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #1b5e20;
+    min-height: 1.2em;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #5f6f78;
+    margin: 6px 0 14px 0;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>KPI Dashboard Builder</h1>
+    <p class="subtitle">MMM760 Small Business Management — Week 9 seminar preparation</p>
+  </header>
+
+  <div class="intro-card">
+    <p><strong>Build a one-page KPI dashboard for your practice business.</strong> Choose your business type, then select three to five metrics that will tell you most clearly whether the business is on track. As you select each metric, you will get plain-English feedback to help you decide whether it earns its place on the dashboard.</p>
+    <p><strong>Why three to five.</strong> A dashboard with twenty metrics will not get reviewed every week. A dashboard with three to five carefully chosen metrics will. The skill this activity builds is choosing well, not measuring more.</p>
+    <p><strong>What to do with it.</strong> Complete the dashboard and export it to Word. Bring the file to seminar — it is the artefact your partner will review in the peer preparation activity, and your reflection on that review goes into your Assessment 3 memo.</p>
+  </div>
+
+  <div class="section">
+    <h2>1. About your practice business</h2>
+    <p class="section-intro">A few details so the dashboard reads as your own when you bring it to seminar. The business type filters the metric panel below.</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label class="field-label" for="studentName">Your name</label>
+        <input type="text" id="studentName" placeholder="Full name">
+      </div>
+      <div>
+        <label class="field-label" for="studentId">Student ID</label>
+        <input type="text" id="studentId" placeholder="e.g. s12345678">
+      </div>
+    </div>
+    <div style="margin-top: 14px;">
+      <label class="field-label" for="businessName">Practice business — short description</label>
+      <p class="field-note">e.g. "Mobile dog grooming service in Geelong" or "Family-run café in Northcote planning a second location"</p>
+      <input type="text" id="businessName" placeholder="A short description of your practice business">
+    </div>
+    <div style="margin-top: 14px;">
+      <label class="field-label" for="businessType">Business type</label>
+      <p class="field-note">Choose the closest match — this filters the metric panel below to show metrics most relevant to your business model.</p>
+      <select id="businessType" onchange="renderMetricPanel()">
+        <option value="">Select your business type</option>
+        <option value="service">Service business (e.g. consultant, lawyer, accountant, design studio)</option>
+        <option value="retail">Retail or hospitality (e.g. café, shop, restaurant, market stall)</option>
+        <option value="online">Online or e-commerce (e.g. online store, digital product, online course)</option>
+        <option value="trades">Trades and home services (e.g. handyman, gardener, electrician, plumber)</option>
+        <option value="health">Allied health and clinic (e.g. dental, physiotherapy, podiatry, psychology)</option>
+        <option value="mixed">Mixed model (e.g. clinic with online product, café with catering arm)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>2. Choose your metrics <span class="dashboard-counter" id="counter">0 of 5</span></h2>
+    <p class="section-intro">Click a metric to add it to your dashboard. Click again to remove. Aim for three to five metrics — you cannot select more than five. Once selected, you will see plain-English feedback on whether the metric is likely to be useful for your business.</p>
+
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background: #1b5e20;"></span>Leading indicator (predicts revenue)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background: #7a3800;"></span>Contextual (depends on business)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background: #b71c1c;"></span>Often a vanity metric</span>
+    </div>
+
+    <div id="metricPanel">
+      <p style="color: #8a98a0; font-style: italic; padding: 20px; text-align: center;">Choose a business type above to see the metric options.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>3. Your dashboard <span id="counterPanel" class="dashboard-counter">0 of 5</span></h2>
+    <p class="section-intro">As you select metrics, they appear here. For each metric, write a one-sentence rationale in plain language an owner would understand. This is the rationale your peer reviewer will press on.</p>
+
+    <div class="dashboard-panel" id="dashboardPanel">
+      <div class="dashboard-empty">No metrics selected yet. Click a metric in the panel above to add it to your dashboard.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>4. Action prompt</h2>
+    <p class="section-intro">A measurement without a question or decision attached to it is just bookkeeping. Write one question or action prompt the dashboard would force you to ask each week. This is what makes the dashboard useful rather than ornamental.</p>
+    <div>
+      <label class="field-label" for="actionPrompt">Your action prompt for this dashboard</label>
+      <p class="field-note">e.g. "Conversion rate dropped from 22% to 15% — what changed in the booking process this week?" — or — "Repeat rate is climbing — what are we doing right that we should keep doing?"</p>
+      <textarea id="actionPrompt" placeholder="What question would this dashboard prompt you to ask each week?"></textarea>
+    </div>
+  </div>
+
+  <div class="reminder-box">
+    <strong>Before you close this tab:</strong> click <em>Export to Word</em> and save the file. There is no automatic save — once you close this tab, your entries are gone. Bring the file to seminar.
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn btn-primary" id="exportBtn" onclick="exportToWord()">
+      Export to Word (.docx)
+    </button>
+    <button type="button" class="btn btn-secondary" onclick="window.print()">
+      Print
+    </button>
+    <button type="button" class="btn btn-tertiary" onclick="clearAll()">
+      Clear all
+    </button>
+  </div>
+
+  <div class="save-status" id="saveStatus"></div>
+
+  <p class="footer-note">MMM760 Small Business Management — Trimester 1, 2026 — Deakin University</p>
+  <p class="attribution">Banner styling: Adobe Stock standard licence.</p>
+</div>
+
+<script>
+// Metrics catalogue
+// category: leading, contextual, vanity
+// applicableTo: array of business types
+const METRICS = [
+  // Service business
+  { id: 'sb_enquiries', name: 'New enquiries per week', desc: 'Count of new enquiries received from any channel.', category: 'leading', applicableTo: ['service', 'health', 'trades', 'mixed'] },
+  { id: 'sb_conv', name: 'Enquiry-to-booking conversion rate', desc: 'Percentage of enquiries that become paying customers.', category: 'leading', applicableTo: ['service', 'health', 'mixed'] },
+  { id: 'sb_avgrev', name: 'Average revenue per client', desc: 'Total revenue divided by number of active clients.', category: 'leading', applicableTo: ['service', 'health', 'trades', 'mixed'] },
+  { id: 'sb_repeat', name: 'Repeat or retention rate', desc: 'Percentage of clients who return or remain active.', category: 'leading', applicableTo: ['service', 'health', 'trades', 'retail', 'online', 'mixed'] },
+  { id: 'sb_reviews', name: 'Google review count and average', desc: 'Total reviews and average star rating.', category: 'leading', applicableTo: ['service', 'health', 'trades', 'retail', 'mixed'] },
+
+  // Retail / hospitality
+  { id: 'rt_revenue', name: 'Daily revenue', desc: 'Total revenue per day of trading.', category: 'leading', applicableTo: ['retail', 'mixed'] },
+  { id: 'rt_atv', name: 'Average transaction value', desc: 'Average dollar value per customer transaction.', category: 'leading', applicableTo: ['retail', 'mixed'] },
+  { id: 'rt_count', name: 'Customer count per day', desc: 'Number of paying customers per trading day.', category: 'leading', applicableTo: ['retail', 'mixed'] },
+  { id: 'rt_cogs', name: 'Cost of goods sold (% of revenue)', desc: 'How much of each dollar of revenue goes to product cost.', category: 'leading', applicableTo: ['retail', 'mixed'] },
+
+  // Online / e-commerce
+  { id: 'on_conv', name: 'Visit-to-purchase conversion rate', desc: 'Percentage of website visits that become a sale.', category: 'leading', applicableTo: ['online', 'mixed'] },
+  { id: 'on_aov', name: 'Average order value', desc: 'Average dollar value per order.', category: 'leading', applicableTo: ['online', 'mixed'] },
+  { id: 'on_cac', name: 'Customer acquisition cost', desc: 'What it costs to acquire each new customer.', category: 'leading', applicableTo: ['online', 'service', 'health', 'mixed'] },
+  { id: 'on_repeatpurch', name: 'Repeat purchase rate', desc: 'Percentage of customers who buy again.', category: 'leading', applicableTo: ['online', 'retail', 'mixed'] },
+  { id: 'on_cart', name: 'Cart abandonment rate', desc: 'Percentage of visitors who add to cart but do not purchase.', category: 'leading', applicableTo: ['online', 'mixed'] },
+
+  // Trades / home services
+  { id: 'tr_quotes', name: 'Quotes issued per week', desc: 'Number of formal or informal quotes issued.', category: 'leading', applicableTo: ['trades', 'service', 'mixed'] },
+  { id: 'tr_qconv', name: 'Quote-to-job conversion rate', desc: 'Percentage of quotes that become paid work.', category: 'leading', applicableTo: ['trades', 'service', 'mixed'] },
+  { id: 'tr_avgjob', name: 'Average job value', desc: 'Average dollar value per completed job.', category: 'leading', applicableTo: ['trades', 'mixed'] },
+  { id: 'tr_referral', name: 'Repeat client and referral rate', desc: 'Percentage of work coming from existing clients or referrals.', category: 'leading', applicableTo: ['trades', 'service', 'health', 'mixed'] },
+  { id: 'tr_jobprofit', name: 'Job profitability', desc: 'Revenue minus materials and time, per job.', category: 'leading', applicableTo: ['trades', 'mixed'] },
+
+  // Allied health / clinic
+  { id: 'hl_newpatients', name: 'New patient enquiries per week', desc: 'Count of new patient enquiries from any channel.', category: 'leading', applicableTo: ['health', 'service', 'mixed'] },
+  { id: 'hl_firstappt', name: 'Enquiry-to-first-appointment rate', desc: 'Percentage of new enquiries who attend a first appointment.', category: 'leading', applicableTo: ['health', 'mixed'] },
+  { id: 'hl_active', name: 'Active patient list (12 months)', desc: 'Number of patients seen in the last 12 months.', category: 'leading', applicableTo: ['health', 'mixed'] },
+  { id: 'hl_avgrev', name: 'Average revenue per patient per year', desc: 'Annual revenue divided by active patient count.', category: 'leading', applicableTo: ['health', 'mixed'] },
+  { id: 'hl_recall', name: 'Recall and rebooking rate', desc: 'Percentage of patients who rebook within recommended timeframe.', category: 'leading', applicableTo: ['health', 'mixed'] },
+
+  // Mixed-model only
+  { id: 'mx_revsplit', name: 'Revenue split by channel', desc: 'How revenue is distributed across different parts of the business.', category: 'leading', applicableTo: ['mixed'] },
+  { id: 'mx_crosssell', name: 'Cross-sell rate', desc: 'Percentage of customers using more than one part of the business.', category: 'leading', applicableTo: ['mixed'] },
+  { id: 'mx_marginchannel', name: 'Margin by channel', desc: 'Profitability of each part of the business separately.', category: 'leading', applicableTo: ['mixed'] },
+
+  // Contextual (could be vanity or leading depending on business)
+  { id: 'cx_pageviews', name: 'Website page views', desc: 'Number of times website pages are viewed.', category: 'contextual', applicableTo: ['online', 'service', 'retail', 'health', 'trades', 'mixed'] },
+  { id: 'cx_emaillist', name: 'Email list size', desc: 'Total subscribers on email list.', category: 'contextual', applicableTo: ['online', 'service', 'retail', 'health', 'mixed'] },
+  { id: 'cx_npscore', name: 'Net Promoter Score', desc: 'Customer-rated likelihood to recommend, from -100 to +100.', category: 'contextual', applicableTo: ['service', 'health', 'retail', 'online', 'trades', 'mixed'] },
+
+  // Vanity metrics (often)
+  { id: 'vn_followers', name: 'Social media followers', desc: 'Total followers across Instagram, Facebook, TikTok, LinkedIn.', category: 'vanity', applicableTo: ['service', 'retail', 'online', 'health', 'trades', 'mixed'] },
+  { id: 'vn_likes', name: 'Likes and reactions on posts', desc: 'Engagement on social media content.', category: 'vanity', applicableTo: ['service', 'retail', 'online', 'health', 'trades', 'mixed'] },
+  { id: 'vn_impressions', name: 'Impressions or reach (advertising)', desc: 'Number of times an ad or post was potentially seen.', category: 'vanity', applicableTo: ['service', 'retail', 'online', 'health', 'trades', 'mixed'] },
+  { id: 'vn_postcount', name: 'Number of posts published per month', desc: 'Volume of content produced.', category: 'vanity', applicableTo: ['service', 'retail', 'online', 'health', 'trades', 'mixed'] },
+];
+
+// Feedback messages by category
+const FEEDBACK = {
+  leading: {
+    type: 'confirm',
+    title: 'Good choice — this is a leading indicator',
+    body: 'This metric tells you something about whether the business is heading in the right direction. When it goes up, it usually means more revenue is coming. When it drops, it gives you an early warning. Keep it on your dashboard.'
+  },
+  contextual: {
+    type: 'warn',
+    title: 'Use carefully — this metric depends on context',
+    body: 'For some businesses this is a real revenue indicator. For others it is closer to noise. Ask yourself: does this metric, when it goes up, mean my business is closer to making money — or just louder? If you cannot answer yes confidently, swap it for something more direct.'
+  },
+  vanity: {
+    type: 'alert',
+    title: 'This is often called a vanity metric',
+    body: 'Metrics like this go up and down independently of revenue. A business with 10,000 followers and a quiet sales pipeline is in worse shape than one with 200 followers and a steady flow of paying customers. Try replacing this with a metric that connects more directly to revenue — for example, new enquiries, conversion rate, or repeat customer rate.'
+  }
+};
+
+// State
+const state = {
+  selected: []  // array of metric ids in selection order
+};
+
+const MAX_METRICS = 5;
+
+function renderMetricPanel() {
+  const businessType = document.getElementById('businessType').value;
+  const panel = document.getElementById('metricPanel');
+
+  if (!businessType) {
+    panel.innerHTML = '<p style="color: #8a98a0; font-style: italic; padding: 20px; text-align: center;">Choose a business type above to see the metric options.</p>';
+    return;
+  }
+
+  const applicable = METRICS.filter(m => m.applicableTo.includes(businessType));
+
+  // Group by category
+  const leading = applicable.filter(m => m.category === 'leading');
+  const contextual = applicable.filter(m => m.category === 'contextual');
+  const vanity = applicable.filter(m => m.category === 'vanity');
+
+  const limitReached = state.selected.length >= MAX_METRICS;
+
+  function renderCard(m) {
+    const isSelected = state.selected.includes(m.id);
+    const isDisabled = !isSelected && limitReached;
+    const cls = 'metric-card' + (isSelected ? ' selected' : '') + (isDisabled ? ' disabled' : '');
+    const onclick = isDisabled ? '' : 'onclick="toggleMetric(\'' + m.id + '\')"';
+    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often a vanity metric');
+    return '<div class="' + cls + '" ' + onclick + '>' +
+      '<p class="metric-card__title">' + m.name + '</p>' +
+      '<p class="metric-card__desc">' + m.desc + '</p>' +
+      '<span class="metric-card__category metric-card__category--' + m.category + '">' + categoryLabel + '</span>' +
+      '</div>';
+  }
+
+  let html = '';
+  if (leading.length) {
+    html += '<h4 style="font-size: 0.92rem; color: #1b5e20; margin: 14px 0 6px 0;">Leading indicators</h4>';
+    html += '<div class="metric-grid">' + leading.map(renderCard).join('') + '</div>';
+  }
+  if (contextual.length) {
+    html += '<h4 style="font-size: 0.92rem; color: #7a3800; margin: 18px 0 6px 0;">Contextual metrics</h4>';
+    html += '<div class="metric-grid">' + contextual.map(renderCard).join('') + '</div>';
+  }
+  if (vanity.length) {
+    html += '<h4 style="font-size: 0.92rem; color: #b71c1c; margin: 18px 0 6px 0;">Often vanity metrics</h4>';
+    html += '<div class="metric-grid">' + vanity.map(renderCard).join('') + '</div>';
+  }
+
+  panel.innerHTML = html;
+}
+
+function toggleMetric(id) {
+  const idx = state.selected.indexOf(id);
+  if (idx >= 0) {
+    state.selected.splice(idx, 1);
+  } else {
+    if (state.selected.length >= MAX_METRICS) return;
+    state.selected.push(id);
+  }
+  renderMetricPanel();
+  renderDashboard();
+  updateCounter();
+}
+
+function removeMetric(id) {
+  const idx = state.selected.indexOf(id);
+  if (idx >= 0) {
+    // Save existing rationale text if any
+    state.selected.splice(idx, 1);
+    renderMetricPanel();
+    renderDashboard();
+    updateCounter();
+  }
+}
+
+function getMetric(id) {
+  return METRICS.find(m => m.id === id);
+}
+
+function renderDashboard() {
+  const panel = document.getElementById('dashboardPanel');
+
+  if (state.selected.length === 0) {
+    panel.classList.remove('has-metrics');
+    panel.innerHTML = '<div class="dashboard-empty">No metrics selected yet. Click a metric in the panel above to add it to your dashboard.</div>';
+    return;
+  }
+
+  panel.classList.add('has-metrics');
+
+  // Preserve existing rationale values
+  const existingRationales = {};
+  state.selected.forEach(id => {
+    const el = document.getElementById('rationale-' + id);
+    if (el) existingRationales[id] = el.value;
+  });
+
+  let html = '';
+  state.selected.forEach((id, index) => {
+    const m = getMetric(id);
+    if (!m) return;
+    const fb = FEEDBACK[m.category];
+    const existingValue = existingRationales[id] || '';
+    html += '<div class="selected-metric">' +
+      '<div class="selected-metric__header">' +
+        '<p class="selected-metric__title">' + (index + 1) + '. ' + m.name + '</p>' +
+        '<button type="button" class="remove-btn" onclick="removeMetric(\'' + id + '\')">remove</button>' +
+      '</div>' +
+      '<p style="font-size: 0.85rem; color: #5f6f78; margin: 0;">' + m.desc + '</p>' +
+      '<div class="feedback-box ' + fb.type + '">' +
+        '<strong>' + fb.title + '</strong>' +
+        fb.body +
+      '</div>' +
+      '<div class="selected-metric__rationale">' +
+        '<label for="rationale-' + id + '">Your one-sentence rationale (in plain language an owner would understand):</label>' +
+        '<textarea id="rationale-' + id + '" placeholder="Why does this metric matter for your practice business?">' + existingValue + '</textarea>' +
+      '</div>' +
+      '</div>';
+  });
+
+  panel.innerHTML = html;
+}
+
+function updateCounter() {
+  const count = state.selected.length;
+  const text = count + ' of ' + MAX_METRICS;
+  const counter = document.getElementById('counter');
+  const counterPanel = document.getElementById('counterPanel');
+
+  let cls = 'dashboard-counter';
+  if (count >= 3 && count <= 5) cls += ' full';
+  else if (count > 0 && count < 3) cls += ' warn';
+
+  counter.className = cls;
+  counter.textContent = text;
+  counterPanel.className = cls;
+  counterPanel.textContent = text;
+
+  document.getElementById('exportBtn').disabled = count === 0;
+}
+
+function escapeXml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe.replace(/[<>&'"]/g, c => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+    }
+  });
+}
+
+function exportToWord() {
+  if (state.selected.length === 0) {
+    alert('Select at least one metric before exporting.');
+    return;
+  }
+
+  const studentName = (document.getElementById('studentName').value || '[not specified]').trim();
+  const studentId = (document.getElementById('studentId').value || '[not specified]').trim();
+  const businessName = (document.getElementById('businessName').value || '[not specified]').trim();
+  const businessType = document.getElementById('businessType');
+  const businessTypeLabel = businessType.options[businessType.selectedIndex].text;
+  const actionPrompt = (document.getElementById('actionPrompt').value || '[not specified]').trim();
+
+  let metricRows = '';
+  state.selected.forEach((id, i) => {
+    const m = getMetric(id);
+    const rationaleEl = document.getElementById('rationale-' + id);
+    const rationale = (rationaleEl && rationaleEl.value.trim()) || '[no rationale provided]';
+    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often a vanity metric');
+    metricRows += '<tr>' +
+      '<td style="vertical-align: top; width: 5%; padding: 8pt;"><b>' + (i + 1) + '</b></td>' +
+      '<td style="vertical-align: top; width: 30%; padding: 8pt;"><b>' + escapeXml(m.name) + '</b><br><span style="font-size: 9pt; color: #5f6f78;">' + escapeXml(categoryLabel) + '</span></td>' +
+      '<td style="vertical-align: top; width: 30%; padding: 8pt; font-size: 10pt;">' + escapeXml(m.desc) + '</td>' +
+      '<td style="vertical-align: top; width: 35%; padding: 8pt; font-size: 10pt;">' + escapeXml(rationale).replace(/\n/g, '<br>') + '</td>' +
+      '</tr>';
+  });
+
+  const html = '<!DOCTYPE html><html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="UTF-8"><title>KPI Dashboard</title>' +
+    '<style>' +
+    'body { font-family: Calibri, sans-serif; font-size: 11pt; color: #22313a; }' +
+    'h1 { color: #00635e; font-size: 18pt; border-bottom: 2pt solid #00635e; padding-bottom: 4pt; }' +
+    'h2 { color: #00635e; font-size: 13pt; margin-top: 18pt; margin-bottom: 6pt; }' +
+    'p { margin: 4pt 0; }' +
+    '.label { font-weight: bold; color: #344047; }' +
+    '.intro { background: #f4f6f8; padding: 10pt; border-left: 3pt solid #F76919; margin-bottom: 18pt; font-size: 10pt; }' +
+    'table { border-collapse: collapse; width: 100%; margin-top: 6pt; }' +
+    'table th { background: #00635e; color: #ffffff; text-align: left; padding: 8pt; font-size: 10pt; }' +
+    'table td { border-bottom: 1pt solid #e1e1e1; }' +
+    '.action-box { background: #fff3e0; border-left: 3pt solid #F76919; padding: 10pt; margin-top: 12pt; font-size: 10.5pt; }' +
+    '</style>' +
+    '</head><body>' +
+    '<h1>MMM760 KPI Dashboard</h1>' +
+    '<div class="intro">This dashboard was built using the Week 9 KPI Dashboard Builder for MMM760 Small Business Management. It is the artefact brought to seminar for the peer preparation review and feeds the Section 3 reflection in the student\'s Assessment 3 memo.</div>' +
+
+    '<h2>About this dashboard</h2>' +
+    '<p><span class="label">Student:</span> ' + escapeXml(studentName) + '</p>' +
+    '<p><span class="label">Student ID:</span> ' + escapeXml(studentId) + '</p>' +
+    '<p><span class="label">Practice business:</span> ' + escapeXml(businessName) + '</p>' +
+    '<p><span class="label">Business type:</span> ' + escapeXml(businessTypeLabel) + '</p>' +
+
+    '<h2>Selected metrics</h2>' +
+    '<table>' +
+    '<thead><tr>' +
+    '<th style="width: 5%;">#</th>' +
+    '<th style="width: 30%;">Metric</th>' +
+    '<th style="width: 30%;">What it measures</th>' +
+    '<th style="width: 35%;">Why it matters for this business</th>' +
+    '</tr></thead>' +
+    '<tbody>' + metricRows + '</tbody>' +
+    '</table>' +
+
+    '<h2>Action prompt</h2>' +
+    '<p style="font-size: 10pt; color: #5f6f78; font-style: italic;">A measurement without a question or decision attached to it is just bookkeeping. The action prompt is what makes this dashboard useful rather than ornamental.</p>' +
+    '<div class="action-box">' + escapeXml(actionPrompt).replace(/\n/g, '<br>') + '</div>' +
+
+    '<p style="margin-top: 24pt; font-size: 9pt; color: #5f6f78;">MMM760 Small Business Management — Trimester 1, 2026 — Deakin University</p>' +
+    '</body></html>';
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  const surname = (studentName.split(' ').pop() || 'Surname').replace(/[^a-zA-Z]/g, '');
+  const id = (studentId || 'StudentID').replace(/[^a-zA-Z0-9]/g, '');
+  const filename = 'MMM760_Week9_KPIDashboard_' + surname + '_' + id + '.doc';
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  document.getElementById('saveStatus').textContent = 'Exported as ' + filename;
+  setTimeout(() => { document.getElementById('saveStatus').textContent = ''; }, 5000);
+}
+
+function clearAll() {
+  if (!confirm('Clear all entries and selected metrics? This cannot be undone.')) return;
+  state.selected = [];
+  document.querySelectorAll('input, textarea').forEach(el => { el.value = ''; });
+  document.getElementById('businessType').value = '';
+  renderMetricPanel();
+  renderDashboard();
+  updateCounter();
+  document.getElementById('saveStatus').textContent = 'Cleared.';
+  setTimeout(() => { document.getElementById('saveStatus').textContent = ''; }, 3000);
+}
+
+// Initial state
+updateCounter();
+</script>
+</body>
+</html>
