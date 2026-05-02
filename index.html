@@ -385,6 +385,7 @@
   <div class="intro-card">
     <p><strong>Build a one-page KPI dashboard for your practice business.</strong> Choose your business type, then select three to five metrics that will tell you most clearly whether the business is on track. As you select each metric, you will get plain-English feedback to help you decide whether it earns its place on the dashboard.</p>
     <p><strong>Why three to five.</strong> A dashboard with twenty metrics will not get reviewed every week. A dashboard with three to five carefully chosen metrics will. The skill this activity builds is choosing well, not measuring more.</p>
+    <p><strong>You must be able to defend every metric you choose.</strong> The metrics are grouped into three categories — leading indicators, contextual metrics, and metrics often considered vanity metrics. The categories are starting points, not rules. A metric that is a vanity metric for one business may be a real leading indicator for another. If you select a contextual or vanity metric, you are not penalised — but you must explain in plain language why it is a real revenue indicator <em>for your specific practice business</em>. Your peer reviewer will press on this. Generic rationales like "it builds brand awareness" will not survive the review.</p>
     <p><strong>What to do with it.</strong> Complete the dashboard and export it to Word. Bring the file to seminar — it is the artefact your partner will review in the peer preparation activity, and your reflection on that review goes into your Assessment 3 memo.</p>
   </div>
 
@@ -423,12 +424,12 @@
 
   <div class="section">
     <h2>2. Choose your metrics <span class="dashboard-counter" id="counter">0 of 5</span></h2>
-    <p class="section-intro">Click a metric to add it to your dashboard. Click again to remove. Aim for three to five metrics — you cannot select more than five. Once selected, you will see plain-English feedback on whether the metric is likely to be useful for your business.</p>
+    <p class="section-intro">Click a metric to add it to your dashboard. Click again to remove. Aim for three to five metrics — you cannot select more than five. As you select each metric, you will see plain-English feedback. <strong>Every metric you select needs a defence.</strong> Leading indicators are the easiest to defend because they connect directly to revenue. Contextual and vanity metrics can still earn a place — but you will need to explain specifically why, for your business, the metric is a real revenue signal. Your peer reviewer will press on this in the seminar.</p>
 
     <div class="legend">
       <span class="legend-item"><span class="legend-swatch" style="background: #1b5e20;"></span>Leading indicator (predicts revenue)</span>
       <span class="legend-item"><span class="legend-swatch" style="background: #7a3800;"></span>Contextual (depends on business)</span>
-      <span class="legend-item"><span class="legend-swatch" style="background: #b71c1c;"></span>Often a vanity metric</span>
+      <span class="legend-item"><span class="legend-swatch" style="background: #b71c1c;"></span>Often considered a vanity metric</span>
     </div>
 
     <div id="metricPanel">
@@ -582,7 +583,7 @@ function renderMetricPanel() {
     const isDisabled = !isSelected && limitReached;
     const cls = 'metric-card' + (isSelected ? ' selected' : '') + (isDisabled ? ' disabled' : '');
     const onclick = isDisabled ? '' : 'onclick="toggleMetric(\'' + m.id + '\')"';
-    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often a vanity metric');
+    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often considered vanity');
     return '<div class="' + cls + '" ' + onclick + '>' +
       '<p class="metric-card__title">' + m.name + '</p>' +
       '<p class="metric-card__desc">' + m.desc + '</p>' +
@@ -600,7 +601,7 @@ function renderMetricPanel() {
     html += '<div class="metric-grid">' + contextual.map(renderCard).join('') + '</div>';
   }
   if (vanity.length) {
-    html += '<h4 style="font-size: 0.92rem; color: #b71c1c; margin: 18px 0 6px 0;">Often vanity metrics</h4>';
+    html += '<h4 style="font-size: 0.92rem; color: #b71c1c; margin: 18px 0 6px 0;">Metrics often considered vanity metrics</h4>';
     html += '<div class="metric-grid">' + vanity.map(renderCard).join('') + '</div>';
   }
 
@@ -653,12 +654,55 @@ function renderDashboard() {
     if (el) existingRationales[id] = el.value;
   });
 
+  // Count by category for soft warning banner
+  let contextualCount = 0;
+  let vanityCount = 0;
+  let leadingCount = 0;
+  state.selected.forEach(id => {
+    const m = getMetric(id);
+    if (!m) return;
+    if (m.category === 'contextual') contextualCount++;
+    else if (m.category === 'vanity') vanityCount++;
+    else if (m.category === 'leading') leadingCount++;
+  });
+
   let html = '';
+
+  // Soft warning banner
+  if (vanityCount >= 2 || contextualCount >= 2 || (vanityCount >= 1 && contextualCount >= 1 && leadingCount === 0)) {
+    let bannerText = '';
+    if (vanityCount >= 2) {
+      bannerText = 'You have selected ' + vanityCount + ' metrics often considered vanity metrics. This can be the right call for businesses where these are genuine revenue signals (a content publisher, an influencer, a media business) — but for most small businesses they are not. Be ready to defend each one specifically in your peer review. If you cannot give a clear reason why this metric, when it goes up, means more revenue is coming, swap it for one that connects more directly.';
+    } else if (contextualCount >= 2) {
+      bannerText = 'You have selected ' + contextualCount + ' contextual metrics. These can be the right call for some business models — but you will need to explain in your peer review why each one is a real revenue indicator for your specific business, not a generic engagement number. If you cannot defend it, swap it.';
+    } else {
+      bannerText = 'Your dashboard contains no leading indicators — only contextual and vanity metrics. This is unusual. For most small businesses, the strongest dashboards have at least two or three metrics that connect directly to enquiries, conversion, or revenue. Reconsider before you take this to seminar.';
+    }
+    html += '<div style="background: #fff7ec; border-left: 4px solid #F76919; padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem;"><strong style="color: #7a3800;">Reconsider before you defend:</strong> ' + bannerText + '</div>';
+  } else if (state.selected.length === 5 && leadingCount === 5) {
+    html += '<div style="background: #f0f8f0; border-left: 4px solid #1b5e20; padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem;"><strong style="color: #1b5e20;">Strong dashboard.</strong> You have selected five leading indicators. Be ready to defend in your peer review whether these are the right five for your specific business — your reviewer will press on this, not on whether they are leading indicators in general.</div>';
+  }
+
   state.selected.forEach((id, index) => {
     const m = getMetric(id);
     if (!m) return;
     const fb = FEEDBACK[m.category];
     const existingValue = existingRationales[id] || '';
+
+    // Stronger prompt label for contextual and vanity metrics
+    let rationaleLabel = '';
+    let rationalePlaceholder = '';
+    if (m.category === 'leading') {
+      rationaleLabel = 'Your one-sentence rationale (in plain language an owner would understand):';
+      rationalePlaceholder = 'Why does this metric matter for your practice business?';
+    } else if (m.category === 'contextual') {
+      rationaleLabel = 'This is a contextual metric — defend it. Explain specifically why this metric is a real revenue indicator for your practice business.';
+      rationalePlaceholder = 'Be specific. A generic rationale will not survive the peer review.';
+    } else {
+      rationaleLabel = 'This is often a vanity metric — defend it. Explain specifically why, for your business, this metric genuinely predicts revenue.';
+      rationalePlaceholder = 'Be specific. If you cannot make the case, remove the metric and choose something more direct.';
+    }
+
     html += '<div class="selected-metric">' +
       '<div class="selected-metric__header">' +
         '<p class="selected-metric__title">' + (index + 1) + '. ' + m.name + '</p>' +
@@ -670,8 +714,8 @@ function renderDashboard() {
         fb.body +
       '</div>' +
       '<div class="selected-metric__rationale">' +
-        '<label for="rationale-' + id + '">Your one-sentence rationale (in plain language an owner would understand):</label>' +
-        '<textarea id="rationale-' + id + '" placeholder="Why does this metric matter for your practice business?">' + existingValue + '</textarea>' +
+        '<label for="rationale-' + id + '">' + rationaleLabel + '</label>' +
+        '<textarea id="rationale-' + id + '" placeholder="' + rationalePlaceholder + '">' + existingValue + '</textarea>' +
       '</div>' +
       '</div>';
   });
@@ -728,7 +772,7 @@ function exportToWord() {
     const m = getMetric(id);
     const rationaleEl = document.getElementById('rationale-' + id);
     const rationale = (rationaleEl && rationaleEl.value.trim()) || '[no rationale provided]';
-    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often a vanity metric');
+    const categoryLabel = m.category === 'leading' ? 'Leading indicator' : (m.category === 'contextual' ? 'Contextual' : 'Often considered vanity');
     metricRows += '<tr>' +
       '<td style="vertical-align: top; width: 5%; padding: 8pt;"><b>' + (i + 1) + '</b></td>' +
       '<td style="vertical-align: top; width: 30%; padding: 8pt;"><b>' + escapeXml(m.name) + '</b><br><span style="font-size: 9pt; color: #5f6f78;">' + escapeXml(categoryLabel) + '</span></td>' +
